@@ -293,6 +293,7 @@ if __name__ == "__main__":
         trust_remote_code=True
     )
     model.config.use_cache = False
+    model = model.to(f'xpu:{os.environ.get("LOCAL_RANK", 0)}')
 
     # load reference model
     model_ref = AutoModelForCausalLM.from_pretrained(
@@ -306,6 +307,7 @@ if __name__ == "__main__":
         use_auth_token=True if model_args.use_auth_token else None,
         trust_remote_code=True
     )
+    model_ref = model_ref.to(f'xpu:{os.environ.get("LOCAL_RANK", 0)}')
 
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
