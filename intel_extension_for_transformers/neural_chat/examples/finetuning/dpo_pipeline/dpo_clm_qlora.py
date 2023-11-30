@@ -43,7 +43,7 @@ from peft import (
     get_peft_model_state_dict,
     set_peft_model_state_dict,
 )
-
+import intel_extension_for_pytorch as ipex
 from bigdl.llm.transformers import AutoModelForCausalLM
 from .dpo_trainer import DPOTrainer
 
