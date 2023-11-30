@@ -235,6 +235,11 @@ class DPOTrainer(Trainer):
             policy_rejected_logits,
         ) = self.dpo_forward(model, batch)
 
+        print("policy_chosen_logps device: ", policy_chosen_logps.device)
+        print("policy_chosen_logps value: ", policy_chosen_logps)
+        print("policy_rejected_logps device: ", policy_rejected_logps.device)
+        print("policy_rejected_logps value: ", policy_rejected_logps)
+
         with torch.no_grad():
             (
                 reference_chosen_logps,
@@ -243,12 +248,25 @@ class DPOTrainer(Trainer):
                 _,
             ) = self.dpo_forward(self.ref_model, batch)
 
+            print("reference_chosen_logps device: ", reference_chosen_logps.device)
+            print("reference_chosen_logps value: ", reference_chosen_logps)
+            print("reference_rejected_logps device: ", reference_rejected_logps.device)
+            print("reference_rejected_logps value: ", reference_rejected_logps)
+
         losses, chosen_rewards, rejected_rewards = self.dpo_loss(
             policy_chosen_logps,
             policy_rejected_logps,
             reference_chosen_logps,
             reference_rejected_logps,
         )
+
+        print("losses device: ", losses.device)
+        print("losses value: ", losses)
+        print("chosen_rewards device: ", chosen_rewards.device)
+        print("chosen_rewards value: ", chosen_rewards)
+        print("rejected_rewards device: ", rejected_rewards.device)
+        print("rejected_rewards value: ", rejected_rewards)
+
         reward_accuracies = (chosen_rewards > rejected_rewards).float()
 
         prefix = "eval_" if train_eval == "eval" else "" # pragma: no cover
