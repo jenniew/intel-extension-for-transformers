@@ -269,8 +269,8 @@ if __name__ == "__main__":
         "use_auth_token": True if model_args.use_auth_token else None,
     }
 
-    # model config
-    config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
+    # # model config
+    # config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
 
     torch_dtype = (
             model_args.torch_dtype if model_args.torch_dtype in ["auto", None] 
@@ -280,7 +280,7 @@ if __name__ == "__main__":
     # load policy model
     model = AutoModelForCausalLM.from_pretrained(
         model_args.model_name_or_path,
-        config=config,
+        # config=config,
         low_cpu_mem_usage=True,
         torch_dtype=torch_dtype,
         load_in_4bit=load_in_4bit,
@@ -294,7 +294,7 @@ if __name__ == "__main__":
     # load reference model
     model_ref = AutoModelForCausalLM.from_pretrained(
         model_args.model_name_or_path,
-        config=config,
+        # config=config,
         low_cpu_mem_usage=True,
         torch_dtype=torch_dtype,
         load_in_4bit=load_in_4bit,
