@@ -45,6 +45,7 @@ from peft import (
 )
 
 from bigdl.llm.transformers import AutoModelForCausalLM
+from .dpo_trainer import DPOTrainer
 
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
@@ -475,10 +476,10 @@ if __name__ == "__main__":
     if training_args.gradient_checkpointing:
         model.enable_input_require_grads()
 
-    if not hasattr(training_args, "use_habana"):
-        from intel_extension_for_transformers.transformers.dpo_trainer import DPOTrainer
-    else:
-        from intel_extension_for_transformers.transformers.dpo_trainer import GaudiDPOTrainer as DPOTrainer
+    # if not hasattr(training_args, "use_habana"):
+    #     from intel_extension_for_transformers.transformers.dpo_trainer import DPOTrainer
+    # else:
+    #     from intel_extension_for_transformers.transformers.dpo_trainer import GaudiDPOTrainer as DPOTrainer
 
     # 5. initialize the DPO trainer
     dpo_trainer = DPOTrainer(
