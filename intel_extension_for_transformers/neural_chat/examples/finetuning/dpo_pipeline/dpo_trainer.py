@@ -268,6 +268,7 @@ class DPOTrainer(Trainer):
         print("rejected_rewards value: ", rejected_rewards)
 
         reward_accuracies = (chosen_rewards > rejected_rewards).float()
+        print(f"reward_accuracies is {reward_accuracies}")
 
         prefix = "eval_" if train_eval == "eval" else "" # pragma: no cover
         metrics[f"{prefix}rewards/chosen"] = chosen_rewards.mean()
