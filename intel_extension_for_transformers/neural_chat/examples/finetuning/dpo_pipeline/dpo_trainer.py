@@ -103,8 +103,10 @@ class DPOTrainer(Trainer):
         model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=args.gradient_checkpointing)
         model = get_peft_model(model, peft_config)
         # model.print_trainable_parameters()
-        model_devlist = set([par.device for par in model.parameters()])
+        model_devlist = [par.device for par in model.parameters()]
+        model_devset = set(model_devlist)
         print(f"model_devlist length is: {len(model_devlist)}")
+        print(f"model_devset length is: {len(model_devset)}")
 
         self.is_peft_model = is_peft_available() and isinstance(model, PeftModel)
 
@@ -139,8 +141,10 @@ class DPOTrainer(Trainer):
             self.ref_model.eval()
         else:
             self.ref_model = self.accelerator.prepare_model(self.ref_model, evaluation_mode=True)
-        ref_devlist = set([par.device for par in self.ref_model.parameters()])
-        print(f"ref_devlist length is: {len(ref_devlist)}")
+        ref_model_devlist = [par.device for par in ref_model.parameters()]
+        ref_model_devset = set(ref_model_devlist)
+        print(f"ref_model_devlist length is: {len(ref_model_devlist)}")
+        print(f"ref_model_devset length is: {len(ref_model_devset)}")
 
 
     def dpo_loss(
