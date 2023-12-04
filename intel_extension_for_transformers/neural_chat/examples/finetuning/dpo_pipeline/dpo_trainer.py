@@ -129,6 +129,8 @@ class DPOTrainer(Trainer):
             tokenizer=tokenizer,
         )
 
+        print(f"accelarator device placement: {self.accelerator.device_placement}")
+        print(f"self.accelerator device : {self.accelerator.device}")
         if self.is_deepspeed_enabled: # pragma: no cover
             # Read more about the issue in https://github.com/huggingface/trl/pull/687
             self.ref_model = self.accelerator._prepare_deepspeed(self.ref_model)[0]
