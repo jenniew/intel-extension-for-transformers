@@ -138,6 +138,7 @@ class DPOTrainer(Trainer):
         else:
             self.ref_model = self.accelerator.prepare_model(self.ref_model, evaluation_mode=True)
 
+
     def dpo_loss(
         self,
         policy_chosen_logps: torch.FloatTensor,
@@ -281,6 +282,8 @@ class DPOTrainer(Trainer):
         metrics[f"{prefix}logps/chosen"] = policy_chosen_logps.detach().mean()
         metrics[f"{prefix}logits/rejected"] = policy_rejected_logits.detach().mean()
         metrics[f"{prefix}logits/chosen"] = policy_chosen_logits.detach().mean()
+
+        print("losses mean: ", losses.mean())
 
         return losses.mean(), metrics
 
