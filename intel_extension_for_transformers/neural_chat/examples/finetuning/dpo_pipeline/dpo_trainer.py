@@ -276,7 +276,7 @@ class DPOTrainer(Trainer):
         inputs: Dict[str, Union[torch.Tensor, Any]],
         return_outputs=False,
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, Dict[str, torch.Tensor]]]:
-        
+
         loss, metrics = self.get_batch_metrics(model, inputs, train_eval="train")
 
         # force log the metrics
