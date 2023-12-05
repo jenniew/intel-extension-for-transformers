@@ -103,7 +103,7 @@ class DPOTrainer(Trainer):
         model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=args.gradient_checkpointing)
         model = get_peft_model(model, peft_config)
         # model.print_trainable_parameters()
-        model_devlist = [par.device for par in model.parameters()]
+        model_devlist = [par.device for _, par in model.named_parameters()]
         model_devset = set(model_devlist)
         print(f"model_devlist length is: {len(model_devlist)}")
         print(f"model_devset length is: {len(model_devset)}")
@@ -135,13 +135,17 @@ class DPOTrainer(Trainer):
 
         print(f"accelarator device placement: {self.accelerator.device_placement}")
         print(f"self.accelerator device : {self.accelerator.device}")
+        ref_model_devlist = [par.device for _,par in ref_model.named_parameters()]
+        ref_model_devset = set(ref_model_devlist)
+        print(f"ref_model_devlist length is: {len(ref_model_devlist)}")
+        print(f"ref_model_devset length is: {len(ref_model_devset)}")
         if self.is_deepspeed_enabled: # pragma: no cover
             # Read more about the issue in https://github.com/huggingface/trl/pull/687
             self.ref_model = self.accelerator._prepare_deepspeed(self.ref_model)[0]
             self.ref_model.eval()
         else:
             self.ref_model = self.accelerator.prepare_model(self.ref_model, evaluation_mode=True)
-        ref_model_devlist = [par.device for par in ref_model.parameters()]
+        ref_model_devlist = [par.device for _,par in ref_model.named_parameters()]
         ref_model_devset = set(ref_model_devlist)
         print(f"ref_model_devlist length is: {len(ref_model_devlist)}")
         print(f"ref_model_devset length is: {len(ref_model_devset)}")
