@@ -27,7 +27,7 @@ from transformers import (
     CONFIG_MAPPING,
     MODEL_FOR_CAUSAL_LM_MAPPING,
     AutoConfig,
-    # AutoModelForCausalLM,
+    AutoModelForCausalLM,
     AutoTokenizer,
     HfArgumentParser,
     TrainingArguments,
@@ -43,9 +43,8 @@ from peft import (
     get_peft_model_state_dict,
     set_peft_model_state_dict,
 )
+
 import intel_extension_for_pytorch as ipex
-from bigdl.llm.transformers import AutoModelForCausalLM
-from .dpo_trainer import DPOTrainer
 
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
@@ -286,13 +285,14 @@ if __name__ == "__main__":
         # config=config,
         low_cpu_mem_usage=True,
         torch_dtype=torch_dtype,
-        load_in_4bit=load_in_4bit,
+        # load_in_4bit=load_in_4bit,
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
         trust_remote_code=True
     )
     model.config.use_cache = False
+
     model = model.to(f'xpu:{os.environ.get("LOCAL_RANK", 0)}')
 
     # load reference model
@@ -301,13 +301,14 @@ if __name__ == "__main__":
         # config=config,
         low_cpu_mem_usage=True,
         torch_dtype=torch_dtype,
-        load_in_4bit=load_in_4bit,
+        # load_in_4bit=load_in_4bit,
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
         trust_remote_code=True
     )
-    model_ref = model_ref.to(f'xpu:{os.environ.get("LOCAL_RANK", 0)}')
+
+    model_ref = model.to(f'xpu:{os.environ.get("LOCAL_RANK", 0)}')
 
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
@@ -478,10 +479,10 @@ if __name__ == "__main__":
     if training_args.gradient_checkpointing:
         model.enable_input_require_grads()
 
-    # if not hasattr(training_args, "use_habana"):
-    #     from intel_extension_for_transformers.transformers.dpo_trainer import DPOTrainer
-    # else:
-    #     from intel_extension_for_transformers.transformers.dpo_trainer import GaudiDPOTrainer as DPOTrainer
+    if not hasattr(training_args, "use_habana"):
+        from intel_extension_for_transformers.transformers.dpo_trainer import DPOTrainer
+    else:
+        from intel_extension_for_transformers.transformers.dpo_trainer import GaudiDPOTrainer as DPOTrainer
 
     # 5. initialize the DPO trainer
     dpo_trainer = DPOTrainer(
