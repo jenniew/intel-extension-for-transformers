@@ -294,7 +294,6 @@ if __name__ == "__main__":
     )
     model.config.use_cache = False
     model = model.to(f'xpu:{os.environ.get("LOCAL_RANK", 0)}')
-    # print(f"model.hf_device_map : {model.hf_device_map}")
 
     # load reference model
     model_ref = AutoModelForCausalLM.from_pretrained(
@@ -309,7 +308,7 @@ if __name__ == "__main__":
         trust_remote_code=True
     )
     model_ref = model_ref.to(f'xpu:{os.environ.get("LOCAL_RANK", 0)}')
-    # print(f"model_ref.hf_device_map : {model_ref.hf_device_map}")
+   
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
         "use_fast": model_args.use_fast_tokenizer,

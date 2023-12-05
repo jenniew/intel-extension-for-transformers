@@ -103,10 +103,6 @@ class DPOTrainer(Trainer):
         model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=args.gradient_checkpointing)
         model = get_peft_model(model, peft_config)
         # model.print_trainable_parameters()
-        model_devlist = [par.device for _, par in model.named_parameters()]
-        model_devset = set(model_devlist)
-        print(f"model_devlist length is: {len(model_devlist)}")
-        print(f"model_devset length is: {len(model_devset)}")
 
         self.is_peft_model = is_peft_available() and isinstance(model, PeftModel)
 
@@ -133,22 +129,12 @@ class DPOTrainer(Trainer):
             tokenizer=tokenizer,
         )
 
-        print(f"accelarator device placement: {self.accelerator.device_placement}")
-        print(f"self.accelerator device : {self.accelerator.device}")
-        ref_model_devlist = [par.device for _,par in ref_model.named_parameters()]
-        ref_model_devset = set(ref_model_devlist)
-        print(f"ref_model_devlist length is: {len(ref_model_devlist)}")
-        print(f"ref_model_devset length is: {len(ref_model_devset)}")
         if self.is_deepspeed_enabled: # pragma: no cover
             # Read more about the issue in https://github.com/huggingface/trl/pull/687
             self.ref_model = self.accelerator._prepare_deepspeed(self.ref_model)[0]
             self.ref_model.eval()
         else:
             self.ref_model = self.accelerator.prepare_model(self.ref_model, evaluation_mode=True)
-        ref_model_devlist = [par.device for _,par in ref_model.named_parameters()]
-        ref_model_devset = set(ref_model_devlist)
-        print(f"ref_model_devlist length is: {len(ref_model_devlist)}")
-        print(f"ref_model_devset length is: {len(ref_model_devset)}")
 
 
     def dpo_loss(
@@ -250,11 +236,6 @@ class DPOTrainer(Trainer):
             policy_rejected_logits,
         ) = self.dpo_forward(model, batch)
 
-        print("policy_chosen_logps device: ", policy_chosen_logps.device)
-        print("policy_chosen_logps value: ", policy_chosen_logps)
-        print("policy_rejected_logps device: ", policy_rejected_logps.device)
-        print("policy_rejected_logps value: ", policy_rejected_logps)
-
         with torch.no_grad():
             (
                 reference_chosen_logps,
@@ -263,11 +244,6 @@ class DPOTrainer(Trainer):
                 _,
             ) = self.dpo_forward(self.ref_model, batch)
 
-            print("reference_chosen_logps device: ", reference_chosen_logps.device)
-            print("reference_chosen_logps value: ", reference_chosen_logps)
-            print("reference_rejected_logps device: ", reference_rejected_logps.device)
-            print("reference_rejected_logps value: ", reference_rejected_logps)
-
         losses, chosen_rewards, rejected_rewards = self.dpo_loss(
             policy_chosen_logps,
             policy_rejected_logps,
@@ -275,12 +251,7 @@ class DPOTrainer(Trainer):
             reference_rejected_logps,
         )
 
-        print("losses device: ", losses.device)
-        print("losses value: ", losses)
-        print("chosen_rewards device: ", chosen_rewards.device)
-        print("chosen_rewards value: ", chosen_rewards)
-        print("rejected_rewards device: ", rejected_rewards.device)
-        print("rejected_rewards value: ", rejected_rewards)
+        print("losses: ", losses)
 
         reward_accuracies = (chosen_rewards > rejected_rewards).float()
         print(f"reward_accuracies is {reward_accuracies}")
@@ -305,7 +276,7 @@ class DPOTrainer(Trainer):
         inputs: Dict[str, Union[torch.Tensor, Any]],
         return_outputs=False,
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, Dict[str, torch.Tensor]]]:
-        print("inputs is: ", inputs)
+        print("inputs device is: ", inputs.device)
         loss, metrics = self.get_batch_metrics(model, inputs, train_eval="train")
 
         # force log the metrics
