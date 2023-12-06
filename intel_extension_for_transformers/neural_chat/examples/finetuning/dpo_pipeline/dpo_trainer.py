@@ -251,10 +251,7 @@ class DPOTrainer(Trainer):
             reference_rejected_logps,
         )
 
-        print("losses: ", losses)
-
         reward_accuracies = (chosen_rewards > rejected_rewards).float()
-        print(f"reward_accuracies is {reward_accuracies}")
 
         prefix = "eval_" if train_eval == "eval" else "" # pragma: no cover
         metrics[f"{prefix}rewards/chosen"] = chosen_rewards.mean()
@@ -265,8 +262,6 @@ class DPOTrainer(Trainer):
         metrics[f"{prefix}logps/chosen"] = policy_chosen_logps.detach().mean()
         metrics[f"{prefix}logits/rejected"] = policy_rejected_logits.detach().mean()
         metrics[f"{prefix}logits/chosen"] = policy_chosen_logits.detach().mean()
-
-        print("losses mean: ", losses.mean())
 
         return losses.mean(), metrics
 
