@@ -219,6 +219,12 @@ if __name__ == "__main__":
 
     model_args, data_args, training_args, finetune_args = parser.parse_args_into_dataclasses()
 
+    from dataclasses import asdict
+    print(f"model_args : \n {asdict(model_args)}")
+    print(f"data_args : \n {asdict(data_args)}")
+    print(f"training_args : \n {asdict(training_args)}")
+    print(f"finetune_args : \n {asdict(finetune_args)}")
+
     if training_args.use_cpu:
         load_in_4bit = False
 
