@@ -188,7 +188,7 @@ class FinetuningArguments:
         default="auto",
         metadata={
             "help": "What device to use for finetuning.",
-            "choices": ["cpu", "cuda", "hpu", "auto"],
+            "choices": ["xpu", "cpu", "cuda", "hpu", "auto"],
         },
     )
 
