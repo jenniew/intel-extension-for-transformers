@@ -43,8 +43,6 @@ from peft import (
     get_peft_model_state_dict,
     set_peft_model_state_dict,
 )
-import intel_extension_for_pytorch as ipex
-from .dpo_trainer import DPOTrainer
 
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
