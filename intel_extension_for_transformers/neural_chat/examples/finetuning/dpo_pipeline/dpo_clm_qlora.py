@@ -27,7 +27,7 @@ from transformers import (
     CONFIG_MAPPING,
     MODEL_FOR_CAUSAL_LM_MAPPING,
     AutoConfig,
-    # AutoModelForCausalLM,
+    AutoModelForCausalLM,
     AutoTokenizer,
     HfArgumentParser,
     TrainingArguments,
@@ -44,7 +44,6 @@ from peft import (
     set_peft_model_state_dict,
 )
 import intel_extension_for_pytorch as ipex
-from bigdl.llm.transformers import AutoModelForCausalLM
 from .dpo_trainer import DPOTrainer
 
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
@@ -187,6 +186,13 @@ class FinetuningArguments:
         metadata={"help": "if True, will add adaptor for all linear for lora finetuning"},
     )
     beta: float = field(default=0.1, metadata={"help": "the beta parameter for DPO loss"})
+    device: str = field(
+        default="auto",
+        metadata={
+            "help": "What device to use for finetuning.",
+            "choices": ["cpu", "cuda", "hpu", "auto"],
+        },
+    )
 
 
 def find_all_linear_names(model):
@@ -218,12 +224,6 @@ if __name__ == "__main__":
         load_in_4bit = False
 
     model_args, data_args, training_args, finetune_args = parser.parse_args_into_dataclasses()
-
-    from dataclasses import asdict
-    print(f"model_args : \n {asdict(model_args)}")
-    print(f"data_args : \n {asdict(data_args)}")
-    print(f"training_args : \n {asdict(training_args)}")
-    print(f"finetune_args : \n {asdict(finetune_args)}")
 
     if training_args.use_cpu:
         load_in_4bit = False
@@ -278,50 +278,70 @@ if __name__ == "__main__":
         "use_auth_token": True if model_args.use_auth_token else None,
     }
 
-    # # model config
-    # config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
-
     torch_dtype = (
             model_args.torch_dtype if model_args.torch_dtype in ["auto", None] 
             else getattr(torch, model_args.torch_dtype)
             )
 
-    # load policy model
-    model = AutoModelForCausalLM.from_pretrained(
-        model_args.model_name_or_path,
-        # config=config,
-        low_cpu_mem_usage=True,
-        # torch_dtype=torch_dtype,
-        #load_in_4bit=load_in_4bit,
-        load_in_low_bit="nf4",
-        optimize_model=False,
-        torch_dtype=torch_dtype,
-        modules_to_not_convert = ["lm_head"],
-        cache_dir=model_args.cache_dir,
-        revision=model_args.model_revision,
-        use_auth_token=True if model_args.use_auth_token else None,
-        trust_remote_code=True
-    )
-    model.config.use_cache = False
-    model = model.to(f'xpu:{os.environ.get("LOCAL_RANK", 0)}')
+    if finetune_args.device == 'xpu':
+        import intel_extension_for_pytorch as ipex
+        from bigdl.llm.transformers import AutoModelForCausalLM
+        # load policy model
+        model = AutoModelForCausalLM.from_pretrained(
+            model_args.model_name_or_path,
+            low_cpu_mem_usage=True,
+            load_in_low_bit="nf4",
+            optimize_model=False,
+            torch_dtype=torch_dtype,
+            modules_to_not_convert = ["lm_head"],
+            cache_dir=model_args.cache_dir,
+            revision=model_args.model_revision,
+            use_auth_token=True if model_args.use_auth_token else None,
+            trust_remote_code=True
+        )
+        model.config.use_cache = False
+        model = model.to(f'xpu:{os.environ.get("LOCAL_RANK", 0)}')
 
-    # load reference model
-    model_ref = AutoModelForCausalLM.from_pretrained(
-        model_args.model_name_or_path,
-        # config=config,
-        low_cpu_mem_usage=True,
-        # torch_dtype=torch_dtype,
-        #load_in_4bit=load_in_4bit,
-        load_in_low_bit="nf4",
-        optimize_model=False,
-        torch_dtype=torch_dtype,
-        modules_to_not_convert=["lm_head"],
-        cache_dir=model_args.cache_dir,
-        revision=model_args.model_revision,
-        use_auth_token=True if model_args.use_auth_token else None,
-        trust_remote_code=True
-    )
-    model_ref = model_ref.to(f'xpu:{os.environ.get("LOCAL_RANK", 0)}')
+        # load reference model
+        model_ref = AutoModelForCausalLM.from_pretrained(
+            model_args.model_name_or_path,
+            # config=config,
+            low_cpu_mem_usage=True,
+            load_in_low_bit="nf4",
+            optimize_model=False,
+            torch_dtype=torch_dtype,
+            modules_to_not_convert=["lm_head"],
+            cache_dir=model_args.cache_dir,
+            revision=model_args.model_revision,
+            use_auth_token=True if model_args.use_auth_token else None,
+            trust_remote_code=True
+        )
+        model_ref = model_ref.to(f'xpu:{os.environ.get("LOCAL_RANK", 0)}')
+    else:
+        # load policy model
+        model = AutoModelForCausalLM.from_pretrained(
+            model_args.model_name_or_path,
+            low_cpu_mem_usage=True,
+            torch_dtype=torch_dtype,
+            load_in_4bit=load_in_4bit,
+            cache_dir=model_args.cache_dir,
+            revision=model_args.model_revision,
+            use_auth_token=True if model_args.use_auth_token else None,
+            trust_remote_code=True
+        )
+        model.config.use_cache = False
+
+        # load reference model
+        model_ref = AutoModelForCausalLM.from_pretrained(
+            model_args.model_name_or_path,
+            low_cpu_mem_usage=True,
+            torch_dtype=torch_dtype,
+            load_in_4bit=load_in_4bit,
+            cache_dir=model_args.cache_dir,
+            revision=model_args.model_revision,
+            use_auth_token=True if model_args.use_auth_token else None,
+            trust_remote_code=True
+        )
 
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
@@ -492,10 +512,13 @@ if __name__ == "__main__":
     if training_args.gradient_checkpointing:
         model.enable_input_require_grads()
 
-    # if not hasattr(training_args, "use_habana"):
-    #     from intel_extension_for_transformers.transformers.dpo_trainer import DPOTrainer
-    # else:
-    #     from intel_extension_for_transformers.transformers.dpo_trainer import GaudiDPOTrainer as DPOTrainer
+    if not hasattr(training_args, "use_habana"):
+        if finetune_args.device == 'xpu':
+            from dpo_trainer import DPOTrainer
+        else:
+            from intel_extension_for_transformers.transformers.dpo_trainer import DPOTrainer
+    else:
+        from intel_extension_for_transformers.transformers.dpo_trainer import GaudiDPOTrainer as DPOTrainer
 
     # 5. initialize the DPO trainer
     dpo_trainer = DPOTrainer(
