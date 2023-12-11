@@ -24,4 +24,4 @@ python dpo_clm_qlora.py \
   --lr_scheduler_type "cosine" \
   --warmup_steps 100 \
   --device xpu \
-  --gradient_checkpointing true \
+  --gradient_checkpointing true
